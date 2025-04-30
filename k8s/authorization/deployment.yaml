@@ -24,7 +24,7 @@ spec:
             - name: APP_VERSION
               value: rc1
             - name: DB_HOST
-              value: database-1.cgpam6asi9ot.us-east-1.rds.amazonaws.com
+              value: database-2.cgpam6asi9ot.us-east-1.rds.amazonaws.com
             - name: DB_PORT
               value: "3306"
             - name: DB_USER

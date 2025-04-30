@@ -20,16 +20,3 @@ spec:
           image: ${IMAGE}
           ports:
             - containerPort: 3000
-          volumeMounts:
-            - name: config-volume
-              mountPath: /usr/share/nginx/html/config.json
-              subPath: config.json
-          env:
-            - name: REACT_APP_API_BASE_URL
-              value: http://authorization-service.uat.svc.cluster.local:8001
-            - name: REACT_APP_BACKEND_BASE_URL
-              value: http://backend-service.uat.svc.cluster.local:8000
-      volumes:
-        - name: config-volume
-          configMap:
-            name: frontend-config
