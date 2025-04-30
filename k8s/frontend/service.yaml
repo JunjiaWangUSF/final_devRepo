@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: frontend
+    color: blue
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      nodePort: 31000 # You can specify a port within the range 30000–32767

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authorization
+  namespace: ${NAMESPACE} # e.g., uat or prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: authorization
+      color: blue
+  template:
+    metadata:
+      labels:
+        app: authorization
+        color: blue
+    spec:
+      containers:
+        - name: authorization
+          image: ${IMAGE}
+          ports:
+            - containerPort: 8001
+          env:
+            - name: APP_VERSION
+              value: rc1
+            - name: DB_HOST
+              value: database-1.cgpam6asi9ot.us-east-1.rds.amazonaws.com
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_USER
+              value: admin
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-password-secret
+                  key: password
+            - name: DB_DATABASE
+              value: weightTracker
