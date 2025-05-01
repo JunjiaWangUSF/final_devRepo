@@ -2,9 +2,9 @@
 
 NAMESPACE ?= uat
 COLOR ?= blue
-AUTHORIZATION_IMAGE ?= 164237789350.dkr.ecr.us-east-1.amazonaws.com/authorization:QA-20250430-1953
-BACKEND_IMAGE ?= 164237789350.dkr.ecr.us-east-1.amazonaws.com/backend:QA-20250430-1952
-FRONTEND_IMAGE ?= 164237789350.dkr.ecr.us-east-1.amazonaws.com/frontend:QA-20250430-1953
+AUTHORIZATION_IMAGE ?= 164237789350.dkr.ecr.us-east-1.amazonaws.com/authorization:QA-20250501-0204
+BACKEND_IMAGE ?= 164237789350.dkr.ecr.us-east-1.amazonaws.com/backend:QA-20250501-0203
+FRONTEND_IMAGE ?= 164237789350.dkr.ecr.us-east-1.amazonaws.com/frontend:QA-20250501-0218
 
 
 
