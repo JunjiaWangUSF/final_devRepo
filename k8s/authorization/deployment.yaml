@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: authorization
+  name: authorization-${COLOR}
   namespace: ${NAMESPACE} # e.g., uat or prod
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: authorization
-      color: blue
+      app: authorization-${COLOR}
+      color: ${COLOR}
   template:
     metadata:
       labels:
-        app: authorization
-        color: blue
+        app: authorization-${COLOR}
+        color: ${COLOR}
     spec:
       containers:
         - name: authorization

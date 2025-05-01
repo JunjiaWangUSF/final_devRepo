@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend
+  name: frontend-${COLOR}
   namespace: ${NAMESPACE}
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: frontend
-      color: blue
+      app: frontend-${COLOR}
+      color: ${COLOR}
   template:
     metadata:
       labels:
-        app: frontend
-        color: blue
+        app: frontend-${COLOR}
+        color: ${COLOR}
     spec:
       containers:
         - name: frontend
