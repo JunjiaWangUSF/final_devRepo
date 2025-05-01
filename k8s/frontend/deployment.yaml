@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend-${COLOR}
+  name: frontend-${COLOR}-${VERSION}
   namespace: ${NAMESPACE}
 spec:
   replicas: 2
@@ -9,11 +9,13 @@ spec:
     matchLabels:
       app: frontend-${COLOR}
       color: ${COLOR}
+      version: ${VERSION}
   template:
     metadata:
       labels:
         app: frontend-${COLOR}
         color: ${COLOR}
+        version: ${VERSION}
     spec:
       containers:
         - name: frontend

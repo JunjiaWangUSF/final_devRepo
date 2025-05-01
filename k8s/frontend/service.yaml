@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend-service-${COLOR}
+  name: frontend-service-${COLOR}-${VERSION}
   namespace: ${NAMESPACE}
   annotations:
     alb.ingress.kubernetes.io/healthcheck-path: "/"
@@ -10,6 +10,7 @@ spec:
   selector:
     app: frontend-${COLOR}
     color: ${COLOR}
+    version: ${VERSION}
   ports:
     - protocol: TCP
       port: 3000

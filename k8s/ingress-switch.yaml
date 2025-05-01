@@ -19,20 +19,20 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: authorization-service-green
+                name: authorization-service-${COLOR}-${VERSION}
                 port:
                   number: 8001
           - path: /api
             pathType: Prefix
             backend:
               service:
-                name: backend-service-green
+                name: backend-service-${COLOR}-${VERSION}
                 port:
                   number: 8000
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: frontend-service-green
+                name: frontend-service-${COLOR}-${VERSION}
                 port:
                   number: 3000

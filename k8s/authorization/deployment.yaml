@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: authorization-${COLOR}
+  name: authorization-${COLOR}-${VERSION}
   namespace: ${NAMESPACE} # e.g., uat or prod
 spec:
   replicas: 2
@@ -9,11 +9,13 @@ spec:
     matchLabels:
       app: authorization-${COLOR}
       color: ${COLOR}
+      version: ${VERSION}
   template:
     metadata:
       labels:
         app: authorization-${COLOR}
         color: ${COLOR}
+        version: ${VERSION}
     spec:
       containers:
         - name: authorization
@@ -22,7 +24,7 @@ spec:
             - containerPort: 8001
           env:
             - name: APP_VERSION
-              value: rc1
+              value: ${VERSION}
             - name: DB_HOST
               value: database-2.cgpam6asi9ot.us-east-1.rds.amazonaws.com
             - name: DB_PORT

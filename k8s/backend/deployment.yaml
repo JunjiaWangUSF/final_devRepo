@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-${COLOR}
+  name: backend-${COLOR}-${VERSION}
   namespace: ${NAMESPACE}
 spec:
   replicas: 2
@@ -9,11 +9,13 @@ spec:
     matchLabels:
       app: backend-${COLOR}
       color: ${COLOR}
+      version: ${VERSION}
   template:
     metadata:
       labels:
         app: backend-${COLOR}
         color: ${COLOR}
+        version: ${VERSION}
     spec:
       containers:
         - name: backend
@@ -22,7 +24,7 @@ spec:
             - containerPort: 8000
           env:
             - name: APP_VERSION
-              value: rc1
+              value: ${VERSION}
             - name: DB_HOST
               value: database-2.cgpam6asi9ot.us-east-1.rds.amazonaws.com
             - name: DB_PORT
