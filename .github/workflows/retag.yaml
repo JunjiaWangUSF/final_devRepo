@@ -1,0 +1,64 @@
+name: push-ecr
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+      - name: Read deployment values from version.yaml
+        id: version
+        run: |
+          echo "namespace=$(yq '.namespace' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "authorization_image=$(yq '.authorization_image' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "backend_image=$(yq '.backend_image' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "frontend_image=$(yq '.frontend_image' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "switch_traffic=$(yq '.switch_traffic' version.yaml)" >> "$GITHUB_OUTPUT"
+
+      - name: Retag and push UAT images
+        if: ${{ steps.version.outputs.retag == 'true' && steps.version.outputs.namespace == 'uat' }}
+        run: |
+          set -e
+
+          TIMESTAMP_TAG="UAT-$(date +"%Y%m%d-%H%M")"
+
+          echo "🔁 Retagging images with new tag: $TIMESTAMP_TAG"
+
+          # --- AUTHORIZATION ---
+          AUTH_IMAGE="${{ steps.version.outputs.authorization_image }}"
+          AUTH_REPO="${AUTH_IMAGE%%:*}"
+          docker pull "$AUTH_IMAGE"
+          docker tag "$AUTH_IMAGE" "$AUTH_REPO:$TIMESTAMP_TAG"
+          docker push "$AUTH_REPO:$TIMESTAMP_TAG"
+          echo "✅ Pushed: $AUTH_REPO:$TIMESTAMP_TAG"
+
+          # --- BACKEND ---
+          BACKEND_IMAGE="${{ steps.version.outputs.backend_image }}"
+          BACKEND_REPO="${BACKEND_IMAGE%%:*}"
+          docker pull "$BACKEND_IMAGE"
+          docker tag "$BACKEND_IMAGE" "$BACKEND_REPO:$TIMESTAMP_TAG"
+          docker push "$BACKEND_REPO:$TIMESTAMP_TAG"
+          echo "✅ Pushed: $BACKEND_REPO:$TIMESTAMP_TAG"
+
+          # --- FRONTEND ---
+          FRONTEND_IMAGE="${{ steps.version.outputs.frontend_image }}"
+          FRONTEND_REPO="${FRONTEND_IMAGE%%:*}"
+          docker pull "$FRONTEND_IMAGE"
+          docker tag "$FRONTEND_IMAGE" "$FRONTEND_REPO:$TIMESTAMP_TAG"
+          docker push "$FRONTEND_REPO:$TIMESTAMP_TAG"
+          echo "✅ Pushed: $FRONTEND_REPO:$TIMESTAMP_TAG"

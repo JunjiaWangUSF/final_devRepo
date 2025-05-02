@@ -8,8 +8,8 @@ VERSION ?= $(shell date +%Y%m%d-%H%M%S)
 AUTHORIZATION_IMAGE ?= 164237789350.dkr.ecr.us-east-1.amazonaws.com/authorization:QA-20250501-0204
 BACKEND_IMAGE ?= 164237789350.dkr.ecr.us-east-1.amazonaws.com/backend:QA-20250501-0203
 
-FRONTEND_IMAGE ?= 164237789350.dkr.ecr.us-east-1.amazonaws.com/frontend:RC-20250501-0425 #red
-#FRONTEND_IMAGE ?= 164237789350.dkr.ecr.us-east-1.amazonaws.com/frontend:QA-20250501-0218 #normal
+#FRONTEND_IMAGE ?= 164237789350.dkr.ecr.us-east-1.amazonaws.com/frontend:RC-20250501-0425 #red
+FRONTEND_IMAGE ?= 164237789350.dkr.ecr.us-east-1.amazonaws.com/frontend:QA-20250501-0218 #normal
 
 
 # ========== Individual Component Deployments ==========

@@ -4,3 +4,4 @@ authorization_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/authorization:
 backend_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/backend:QA-20250501-0203
 frontend_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/frontend:RC-20250501-0425
 switch_traffic: false
+retag: true
