@@ -1,10 +1,39 @@
-name: Retag images for UAT/GA
+name: Retag GA Images on PR Merge
 
 on:
-  workflow_dispatch:
+  pull_request:
+    types: [closed]
+    branches: [main]
+    paths:
+      - "version.yaml"
 
 jobs:
+  check-retag:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.retag-check.outputs.should_run }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install yq
+        run: sudo apt-get update && sudo apt-get install -y yq
+
+      - name: Check retag flag
+        id: retag-check
+        run: |
+          RETAG=$(yq -r '.retag' version.yaml)
+          echo "retag=$RETAG"
+          if [[ "$RETAG" == "true" ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-and-push:
+    needs: check-retag
+    if: needs.check-retag.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -19,25 +48,20 @@ jobs:
 
       - name: Log in to Amazon ECR
         run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+          docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-      - name: Read deployment values from version.yaml
+      - name: Read image values from version.yaml
         id: version
         run: |
-          echo "namespace=$(yq -r '.namespace' version.yaml)" >> "$GITHUB_OUTPUT"
           echo "authorization_image=$(yq -r '.authorization_image' version.yaml)" >> "$GITHUB_OUTPUT"
           echo "backend_image=$(yq -r '.backend_image' version.yaml)" >> "$GITHUB_OUTPUT"
           echo "frontend_image=$(yq -r '.frontend_image' version.yaml)" >> "$GITHUB_OUTPUT"
-          echo "switch_traffic=$(yq -r '.switch_traffic' version.yaml)" >> "$GITHUB_OUTPUT"
-          echo "retag=$(yq -r '.retag' version.yaml)" >> "$GITHUB_OUTPUT"
 
-      - name: Retag and push UAT images
-        if: ${{ steps.version.outputs.retag == 'true' && steps.version.outputs.namespace == 'ga' }}
+      - name: Retag and push GA images
         run: |
           set -e
-
-          TIMESTAMP_TAG="UAT-$(date +"%Y%m%d-%H%M")"
-
+          TIMESTAMP_TAG="GA-$(date +"%Y%m%d-%H%M")"
           echo "🔁 Retagging images with new tag: $TIMESTAMP_TAG"
 
           # --- AUTHORIZATION ---
@@ -46,7 +70,6 @@ jobs:
           docker pull "$AUTH_IMAGE"
           docker tag "$AUTH_IMAGE" "$AUTH_REPO:$TIMESTAMP_TAG"
           docker push "$AUTH_REPO:$TIMESTAMP_TAG"
-          echo "✅ Pushed: $AUTH_REPO:$TIMESTAMP_TAG"
 
           # --- BACKEND ---
           BACKEND_IMAGE="${{ steps.version.outputs.backend_image }}"
@@ -54,7 +77,6 @@ jobs:
           docker pull "$BACKEND_IMAGE"
           docker tag "$BACKEND_IMAGE" "$BACKEND_REPO:$TIMESTAMP_TAG"
           docker push "$BACKEND_REPO:$TIMESTAMP_TAG"
-          echo "✅ Pushed: $BACKEND_REPO:$TIMESTAMP_TAG"
 
           # --- FRONTEND ---
           FRONTEND_IMAGE="${{ steps.version.outputs.frontend_image }}"
@@ -62,4 +84,5 @@ jobs:
           docker pull "$FRONTEND_IMAGE"
           docker tag "$FRONTEND_IMAGE" "$FRONTEND_REPO:$TIMESTAMP_TAG"
           docker push "$FRONTEND_REPO:$TIMESTAMP_TAG"
-          echo "✅ Pushed: $FRONTEND_REPO:$TIMESTAMP_TAG"
+
+          echo "✅ All GA images pushed with tag: $TIMESTAMP_TAG"
