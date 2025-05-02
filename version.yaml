@@ -3,6 +3,6 @@ namespace: uat
 authorization_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/authorization:RC-20250502-0354
 backend_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/backend:RC-20250502-0354
 frontend_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/frontend:RC-20250502-0447
-switch_traffic: false
+switch_traffic: true
 retag: false
 launch: false
