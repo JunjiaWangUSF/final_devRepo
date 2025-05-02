@@ -10,13 +10,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install yq, make, and kubectl
+      - name: Install kubectl
         run: |
-          sudo apt-get update
-          sudo apt-get install -y yq make
-          curl -LO "https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.3/2023-07-05/bin/linux/amd64/kubectl"
-          chmod +x ./kubectl
-          sudo mv ./kubectl /usr/local/bin/
+          curl -sLO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
