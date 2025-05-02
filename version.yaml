@@ -1,8 +1,8 @@
 # version.yaml
-namespace: uat
-authorization_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/authorization:QA-20250501-0204
-backend_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/backend:QA-20250501-0203
-frontend_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/frontend:RC-20250501-0425
+namespace: ga
+authorization_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/authorization:RC-20250502-0343
+backend_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/backend:RC-20250502-0343
+frontend_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/frontend:RC-20250502-0344
 switch_traffic: false
-retag: false
+retag: true
 launch: false
