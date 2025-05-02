@@ -1,4 +1,4 @@
-name: Deploy Green Stack
+name: Deploy or Shift Traffic
 
 on:
   pull_request:
@@ -12,7 +12,8 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     outputs:
-      should_run: ${{ steps.launch-check.outputs.should_run }}
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      should_shift: ${{ steps.check.outputs.should_shift }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -20,25 +21,32 @@ jobs:
       - name: Install yq
         run: sudo apt-get update && sudo apt-get install -y yq
 
-      - name: Check launch flag
-        id: launch-check
+      - name: Read and evaluate flags
+        id: check
         run: |
+          SWITCH=$(yq -r '.switch_traffic' version.yaml)
           LAUNCH=$(yq -r '.launch' version.yaml)
-          if [[ "$LAUNCH" == "true" ]]; then
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
+
+          if [[ "$LAUNCH" == "true" && "$SWITCH" != "true" ]]; then
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            echo "should_shift=false" >> "$GITHUB_OUTPUT"
+          elif [[ "$LAUNCH" == "true" && "$SWITCH" == "true" ]]; then
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+            echo "should_shift=true" >> "$GITHUB_OUTPUT"
           else
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+            echo "should_shift=false" >> "$GITHUB_OUTPUT"
           fi
 
   deploy-green:
     needs: check-launch
-    if: needs.check-launch.outputs.should_run == 'true'
+    if: needs.check-launch.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install kubectl and yq
+      - name: Install tools
         run: |
           curl -sLO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
@@ -52,18 +60,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Set up kubeconfig for EKS
-        run: |
-          aws eks update-kubeconfig --region us-east-1 --name dev-eks-blue-green
+      - name: Set up kubeconfig
+        run: aws eks update-kubeconfig --region us-east-1 --name dev-eks-blue-green
 
-      - name: Read deployment values from version.yaml
+      - name: Read deployment values
         id: version
         run: |
           echo "namespace=$(yq -r '.namespace' version.yaml)" >> "$GITHUB_OUTPUT"
           echo "authorization_image=$(yq -r '.authorization_image' version.yaml)" >> "$GITHUB_OUTPUT"
           echo "backend_image=$(yq -r '.backend_image' version.yaml)" >> "$GITHUB_OUTPUT"
           echo "frontend_image=$(yq -r '.frontend_image' version.yaml)" >> "$GITHUB_OUTPUT"
-          echo "switch_traffic=$(yq -r '.switch_traffic' version.yaml)" >> "$GITHUB_OUTPUT"
 
       - name: Deploy Green
         run: |
@@ -73,7 +79,34 @@ jobs:
             FRONTEND_IMAGE=${{ steps.version.outputs.frontend_image }} \
             NAMESPACE=${{ steps.version.outputs.namespace }}
 
-      - name: Shift traffic to green if enabled
-        if: ${{ steps.version.outputs.switch_traffic == 'true' }}
+  shift-traffic:
+    needs: check-launch
+    if: needs.check-launch.outputs.should_shift == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install tools
+        run: |
+          sudo apt-get update && sudo apt-get install -y yq make
+          curl -sLO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up kubeconfig
+        run: aws eks update-kubeconfig --region us-east-1 --name dev-eks-blue-green
+
+      - name: Read namespace
+        id: version
+        run: echo "namespace=$(yq -r '.namespace' version.yaml)" >> "$GITHUB_OUTPUT"
+
+      - name: Shift traffic
         run: |
           make shift-traffic-${{ steps.version.outputs.namespace }}
