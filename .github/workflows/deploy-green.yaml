@@ -1,0 +1,52 @@
+name: Deploy Green Stack
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-green:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install yq, make, and kubectl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yq make
+          curl -LO "https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.3/2023-07-05/bin/linux/amd64/kubectl"
+          chmod +x ./kubectl
+          sudo mv ./kubectl /usr/local/bin/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig --region us-east-1 --name dev-eks-blue-green
+
+      - name: Read deployment values from version.yaml
+        id: version
+        run: |
+          echo "namespace=$(yq '.namespace' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "authorization_image=$(yq '.authorization_image' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "backend_image=$(yq '.backend_image' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "frontend_image=$(yq '.frontend_image' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "switch_traffic=$(yq '.switch_traffic' version.yaml)" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy Green
+        run: |
+          make deploy-${{ steps.version.outputs.namespace }}-green \
+            AUTHORIZATION_IMAGE=${{ steps.version.outputs.authorization_image }} \
+            BACKEND_IMAGE=${{ steps.version.outputs.backend_image }} \
+            FRONTEND_IMAGE=${{ steps.version.outputs.frontend_image }} \
+            NAMESPACE=${{ steps.version.outputs.namespace }}
+
+      - name: Shift traffic to green if enabled
+        if: ${{ steps.version.outputs.switch_traffic == 'true' }}
+        run: |
+          make shift-traffic-${{ steps.version.outputs.namespace }}
