@@ -32,7 +32,7 @@ jobs:
           echo "retag=$(yq -r '.retag' version.yaml)" >> "$GITHUB_OUTPUT"
 
       - name: Retag and push UAT images
-        if: ${{ steps.version.outputs.retag == 'true' && steps.version.outputs.namespace == ' ' }}
+        if: ${{ steps.version.outputs.retag == 'true' && steps.version.outputs.namespace == 'ga' }}
         run: |
           set -e
 
