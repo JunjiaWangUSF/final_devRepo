@@ -1,4 +1,4 @@
-name: push-ecr
+name: Retag images for UAT/GA
 
 on:
   workflow_dispatch:
