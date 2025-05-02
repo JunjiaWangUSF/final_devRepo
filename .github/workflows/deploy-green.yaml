@@ -1,20 +1,49 @@
 name: Deploy Green Stack
 
 on:
-  workflow_dispatch:
+  pull_request:
+    types: [closed]
+    branches: [main]
+    paths:
+      - "version.yaml"
 
 jobs:
+  check-launch:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.launch-check.outputs.should_run }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install yq
+        run: sudo apt-get update && sudo apt-get install -y yq
+
+      - name: Check launch flag
+        id: launch-check
+        run: |
+          LAUNCH=$(yq -r '.launch' version.yaml)
+          if [[ "$LAUNCH" == "true" ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy-green:
+    needs: check-launch
+    if: needs.check-launch.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install kubectl
+      - name: Install kubectl and yq
         run: |
           curl -sLO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
+          sudo apt-get update && sudo apt-get install -y yq
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -30,11 +59,11 @@ jobs:
       - name: Read deployment values from version.yaml
         id: version
         run: |
-          echo "namespace=$(yq '.namespace' version.yaml)" >> "$GITHUB_OUTPUT"
-          echo "authorization_image=$(yq '.authorization_image' version.yaml)" >> "$GITHUB_OUTPUT"
-          echo "backend_image=$(yq '.backend_image' version.yaml)" >> "$GITHUB_OUTPUT"
-          echo "frontend_image=$(yq '.frontend_image' version.yaml)" >> "$GITHUB_OUTPUT"
-          echo "switch_traffic=$(yq '.switch_traffic' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "namespace=$(yq -r '.namespace' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "authorization_image=$(yq -r '.authorization_image' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "backend_image=$(yq -r '.backend_image' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "frontend_image=$(yq -r '.frontend_image' version.yaml)" >> "$GITHUB_OUTPUT"
+          echo "switch_traffic=$(yq -r '.switch_traffic' version.yaml)" >> "$GITHUB_OUTPUT"
 
       - name: Deploy Green
         run: |
