@@ -27,16 +27,23 @@ jobs:
           SWITCH=$(yq -r '.switch_traffic' version.yaml)
           LAUNCH=$(yq -r '.launch' version.yaml)
 
-          if [[ "$LAUNCH" == "true" && "$SWITCH" != "true" ]]; then
+          echo "Detected launch=$LAUNCH, switch_traffic=$SWITCH"
+
+          if [[ "$SWITCH" == "true" ]]; then
+            echo "should_shift=true" >> "$GITHUB_OUTPUT"
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          elif [[ "$LAUNCH" == "true" ]]; then
             echo "should_deploy=true" >> "$GITHUB_OUTPUT"
             echo "should_shift=false" >> "$GITHUB_OUTPUT"
-          elif [[ "$LAUNCH" == "true" && "$SWITCH" == "true" ]]; then
-            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
-            echo "should_shift=true" >> "$GITHUB_OUTPUT"
           else
             echo "should_deploy=false" >> "$GITHUB_OUTPUT"
             echo "should_shift=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Debug condition outputs
+        run: |
+          echo "should_deploy=${{ steps.check.outputs.should_deploy }}"
+          echo "should_shift=${{ steps.check.outputs.should_shift }}"
 
   deploy-green:
     needs: check-launch
