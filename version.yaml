@@ -5,4 +5,4 @@ backend_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/backend:RC-20250502-
 frontend_image: 164237789350.dkr.ecr.us-east-1.amazonaws.com/frontend:RC-20250502-0354
 switch_traffic: false
 retag: false
-launch: true
+launch: false
